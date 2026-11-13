@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horarios de electricidad</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--text:#1c2030;--muted:#6b7285;--accent:#f5a623;--line:#e2e5ee;--off:#e9ebf2;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161f;--card:#1e212d;--text:#eceef5;--muted:#9aa1b5;--line:#2c3040;--off:#2a2e3d}}
+:root[data-theme="dark"]{--bg:#14161f;--card:#1e212d;--text:#eceef5;--muted:#9aa1b5;--line:#2c3040;--off:#2a2e3d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+main{max-width:560px;margin:0 auto}
+h1{font-size:1.4rem;margin:8px 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:4px}
+input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+input[type=color]{height:42px;padding:3px;cursor:pointer}
+button{font:inherit;background:var(--accent);color:#1c1300;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:600}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+button:disabled{opacity:.4;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--bg);color:var(--text);border:2px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:500}
+.chip.sel{border-color:var(--c)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.day{display:flex;gap:8px;align-items:flex-end}
+.day label{flex:1}
+.circ{margin-top:18px}
+.circ-h{display:flex;align-items:center;gap:8px;font-weight:650}
+.bar{position:relative;height:26px;background:linear-gradient(to right,var(--line) 1px,transparent 1px) 0 0/25% 100%,var(--off);border-radius:8px;overflow:hidden;margin-top:3px}
+.daytext{margin-top:10px;font-size:1.05rem;font-weight:650;text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;font-weight:600;margin-top:14px}
+.legend>span{display:flex;align-items:center;gap:6px}
+.lane{margin-top:10px}
+.lane:first-child{margin-top:14px}
+.lane-l{display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:600}
+.seg{position:absolute;top:0;bottom:0}
+.ticks{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:4px}
+ul{list-style:none;margin:6px 0 0;padding:0}
+li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+li:last-child{border:0}
+.t{font-size:1.1rem;font-weight:650}
+.n{font-size:.78rem;color:var(--muted)}
+.ic{display:block;width:16px;height:16px;border-radius:50%;flex:none}
+.ic.y{background:#f5c518;box-shadow:0 0 0 4px rgba(245,197,24,.3)}
+.ic.b{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.3)}
+.ic.r{background:#e5484d;box-shadow:0 0 0 4px rgba(229,72,77,.25)}
+.ic.u{background:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.3)}
+.icons{display:flex;gap:10px;align-items:center}
+.chk{flex-direction:row;align-items:center;gap:8px;margin-top:12px;color:var(--text);font-size:.9rem}
+.chk input{width:auto}
+.empty{color:var(--muted);padding:8px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>⚡ Horarios con electricidad</h1>
+
+<section class="card">
+<h2>Circuitos</h2>
+<div class="chips" id="chips"></div>
+<div class="grid">
+<label class="full">Nombre del circuito<input type="text" id="name"></label>
+<label class="full">Color del circuito<input type="color" id="color"></label>
+<label>Fecha del primer horario<input type="date" id="startDate"></label>
+<label>Hora de inicio<input type="time" id="startTime"></label>
+<label>Horas CON electricidad<input type="number" id="onH" min="0.5" step="0.5"></label>
+<label>Horas SIN electricidad<input type="number" id="offH" min="0.5" step="0.5"></label>
+<button class="ghost full" id="del">Eliminar este circuito</button>
+</div>
+</section>
+
+<section class="card">
+<h2>Día a consultar</h2>
+<div class="day">
+<button id="prev" aria-label="Día anterior">◀</button>
+<label>Día<input type="date" id="day"></label>
+<button id="next" aria-label="Día siguiente">▶</button>
+</div>
+<div id="dayText" class="daytext"></div>
+<label class="chk"><input type="checkbox" id="onlySel"> Solo el circuito seleccionado</label>
+<div id="chart"></div>
+<div class="ticks"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
+<div id="results"></div>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const H = 3600000;
+const COLORS = ["#2e9e5b","#3b82f6","#e0611f","#a855f7","#e11d74","#0ea5a5"];
+const KEY = "horarios-electricidad-v2";
+const FIELDS = ["name","color","startDate","startTime","onH","offH"];
+
+const newCircuit = (n, i) => ({ name: "Circuito " + n, startDate: iso(new Date()), startTime: "20:00", onH: "3", offH: "12", color: COLORS[i % COLORS.length] });
+let circuits = [], sel = 0, onlySel = false;
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (s && s.circuits && s.circuits.length) { circuits = s.circuits; sel = Math.min(s.sel || 0, circuits.length - 1); onlySel = !!s.onlySel; return; }
+    // migrar configuración de la versión anterior
+    const old = JSON.parse(localStorage.getItem("horarios-electricidad-config") || "null");
+    if (old) { circuits = [Object.assign(newCircuit(1, 0), old, { name: "Circuito 1" })]; return; }
+  } catch (e) {}
+  circuits = [newCircuit(1, 0)];
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ circuits, sel, onlySel })); } catch (e) {} }
+
+function fmt(d) {
+  let h = d.getHours();
+  const suf = h >= 12 ? "p. m." : "a. m.";
+  h = h % 12 || 12;
+  return `${h}:${pad(d.getMinutes())} ${suf}`;
+}
+function fmtDur(h) {
+  const t = Math.round(h * 60), hh = Math.floor(t / 60), mm = t % 60;
+  return mm ? `${hh} h ${mm} min` : `${hh} h`;
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderChips() {
+  $("chips").innerHTML = "";
+  circuits.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (i === sel ? " sel" : "");
+    b.style.setProperty("--c", c.color);
+    b.innerHTML = `<span class="dot"></span>${esc(c.name || "Sin nombre")}`;
+    b.onclick = () => { sel = i; save(); syncForm(); renderChips(); renderDay(); };
+    $("chips").appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.textContent = "+ Añadir";
+  add.onclick = () => {
+    const c = newCircuit(circuits.length + 1, circuits.length);
+    const cur = circuits[sel];
+    if (cur) { c.startDate = cur.startDate; c.startTime = cur.startTime; }
+    circuits.push(c); sel = circuits.length - 1;
+    save(); syncForm(); renderChips(); renderDay();
+  };
+  $("chips").appendChild(add);
+  $("del").disabled = circuits.length < 2;
+}
+
+function syncForm() {
+  resetDel();
+  const c = circuits[sel];
+  FIELDS.forEach(f => $(f).value = c[f]);
+}
+
+const SOON_H = 2; // horas de anticipación para marcar "próximo"
+function nextStartOf(c) {
+  const [sy, sm, sd] = c.startDate.split("-").map(Number);
+  const [th, tm] = c.startTime.split(":").map(Number);
+  const on = parseFloat(c.onH), off = parseFloat(c.offH);
+  if (!sy || isNaN(th) || !(on > 0) || !(off > 0)) return null;
+  const anchor = new Date(sy, sm - 1, sd, th, tm).getTime(), cycle = (on + off) * H;
+  return anchor + (Math.floor((Date.now() - anchor) / cycle) + 1) * cycle;
+}
+function status(s, e, isNext, isGlobal) {
+  const now = Date.now();
+  if (e <= now) return '<span class="ic r" title="Ya pasó"></span>';
+  if (s <= now) return '<span class="ic b" title="En curso"></span>';
+  if (isNext || isGlobal) {
+    let h = "";
+    if (isNext) h += '<span class="ic y" title="Próximo de este circuito"></span>';
+    if (isGlobal) h += '<span class="ic u" title="Horario más cercano de todos"></span>';
+    return '<span class="icons">' + h + '</span>';
+  }
+  return "";
+}
+
+function renderDay() {
+  const [dy, dm, dd] = $("day").value.split("-").map(Number);
+  const dt = $("dayText");
+  if (dy) {
+    const t = new Date(dy, dm - 1, dd).toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    dt.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+  } else dt.textContent = "";
+  const box = $("results");
+  const chart = $("chart");
+  box.innerHTML = "";
+  chart.innerHTML = "";
+  if (!dy) return;
+  const shown = circuits.filter((c, i) => !onlySel || i === sel);
+  let gi = -1, gs = Infinity;
+  circuits.forEach((c, i) => { const n = nextStartOf(c); if (n !== null && n < gs) { gs = n; gi = i; } });
+  const legend = document.createElement("div");
+  legend.className = "legend";
+  legend.innerHTML = shown.map(c => `<span style="--c:${c.color}"><span class="dot"></span>${esc(c.name || "Sin nombre")}</span>`).join("");
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.height = Math.max(26, shown.length * 14) + "px";
+  chart.appendChild(legend);
+  chart.appendChild(bar);
+  const dayStart = new Date(dy, dm - 1, dd).getTime(), dayEnd = dayStart + 24 * H;
+  circuits.forEach((c, ci) => {
+    if (onlySel && ci !== sel) return;
+    const [sy, sm, sd] = c.startDate.split("-").map(Number);
+    const [th, tm] = c.startTime.split(":").map(Number);
+    const on = parseFloat(c.onH), off = parseFloat(c.offH);
+    const wrap = document.createElement("div");
+    wrap.className = "circ";
+    wrap.style.setProperty("--c", c.color);
+    wrap.innerHTML = `<div class="circ-h"><span class="dot"></span>${esc(c.name || "Sin nombre")}</div>`;
+    // los tramos se dibujan en la barra compartida
+    const ul = document.createElement("ul");
+    if (!sy || isNaN(th) || !(on > 0) || !(off > 0)) {
+      ul.innerHTML = '<li class="empty">Configuración incompleta.</li>';
+    } else {
+      const anchor = new Date(sy, sm - 1, sd, th, tm).getTime(), cycle = (on + off) * H;
+      const nextS = anchor + (Math.floor((Date.now() - anchor) / cycle) + 1) * cycle;
+      const k0 = Math.floor((dayStart - anchor - on * H) / cycle), k1 = Math.ceil((dayEnd - anchor) / cycle);
+      let count = 0;
+      for (let k = k0; k <= k1; k++) {
+        const s = anchor + k * cycle, e = s + on * H;
+        if (e <= dayStart || s >= dayEnd) continue;
+        count++;
+        const note = s < dayStart ? "Comenzó el día anterior" : e > dayEnd ? "Continúa al día siguiente" : "";
+        const li = document.createElement("li");
+        li.innerHTML = `<div><div class="t">${fmt(new Date(s))} – ${fmt(new Date(e))}</div><div class="n">${note}</div></div>${status(s, e, ci === sel && Math.abs(s - nextS) < 1000, ci === gi && Math.abs(s - gs) < 1000)}`;
+        ul.appendChild(li);
+        const a = Math.max(s, dayStart), b = Math.min(e, dayEnd);
+        const seg = document.createElement("div");
+        seg.className = "seg";
+        seg.style.background = c.color;
+        seg.style.top = (shown.indexOf(c) * 100 / shown.length) + "%";
+        seg.style.bottom = "auto";
+        seg.style.height = (100 / shown.length) + "%";
+        seg.style.left = ((a - dayStart) / (24 * H) * 100) + "%";
+        seg.style.width = ((b - a) / (24 * H) * 100) + "%";
+        bar.appendChild(seg);
+      }
+      if (!count) ul.innerHTML = '<li class="empty">No hay electricidad este día.</li>';
+    }
+    wrap.appendChild(ul);
+    box.appendChild(wrap);
+  });
+}
+
+function shift(n) {
+  const [y, m, d] = $("day").value.split("-").map(Number);
+  $("day").value = iso(new Date(y, m - 1, d + n));
+  renderDay();
+}
+
+FIELDS.forEach(f => $(f).addEventListener("input", () => {
+  circuits[sel][f] = $(f).value;
+  save();
+  if (f === "name" || f === "color") renderChips();
+  renderDay();
+}));
+$("day").addEventListener("input", renderDay);
+$("prev").onclick = () => shift(-1);
+$("next").onclick = () => shift(1);
+let delTimer = null;
+function resetDel() {
+  clearTimeout(delTimer);
+  delTimer = null;
+  $("del").textContent = "Eliminar este circuito";
+}
+$("del").onclick = () => {
+  if (circuits.length < 2) return;
+  if (!delTimer) {
+    $("del").textContent = `¿Eliminar "${circuits[sel].name}"? Pulsa de nuevo`;
+    delTimer = setTimeout(resetDel, 4000);
+    return;
+  }
+  resetDel();
+  circuits.splice(sel, 1);
+  sel = Math.max(0, sel - 1);
+  save(); syncForm(); renderChips(); renderDay();
+};
+
+load();
+$("day").value = iso(new Date());
+$("onlySel").checked = onlySel;
+$("onlySel").addEventListener("change", () => { onlySel = $("onlySel").checked; save(); renderDay(); });
+setInterval(renderDay, 60000);
+syncForm(); renderChips(); renderDay();
+</script>
+</body>
+</html>
